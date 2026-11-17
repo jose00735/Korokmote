@@ -42,50 +42,47 @@ One long-lived, authenticated WebSocket per phone carries everything. Text frame
 korokmote/
 ├── daemon/                  Go module: github.com/jose00735/korokmote/daemon
 │   ├── cmd/
-│   │   ├── korokmoted/      main: tray app + server
-│   │   └── korokctl/        CLI test client (pair, send actions, measure latency)
+│   │   ├── korokmoted/      main (+ icon/manifest .syso resources)
+│   │   └── korokctl/        CLI client (discover, pair, send, bench, remotes lint)
 │   └── internal/
-│       ├── app/             wiring, lifecycle, single-instance lock
-│       ├── config/          config file, paths, defaults
-│       ├── server/          TLS, WebSocket, sessions, rate limits
-│       ├── pairing/         certificate, tokens, QR payload, device store
-│       ├── discovery/       mDNS advertisement, UDP beacon
-│       ├── proto/           message types, binary frame codec, version negotiation
-│       ├── router/          message -> handler dispatch, permission checks
-│       ├── remotes/         YAML loader, layout model, action executor
-│       ├── platform/        interfaces: Input, Audio, Power, Windows, Files, Clipboard
-│       │   └── windows/     Win32 implementations (build tag: windows)
-│       ├── tray/            tray icon and menu
-│       └── adminui/         embedded local web page (pairing QR, devices, logs)
-├── android/                 Gradle project
-│   ├── app/                 navigation, DI graph, MainActivity
-│   ├── core/
-│   │   ├── protocol/        message models, binary codec (pure Kotlin, JVM-testable)
-│   │   ├── network/         connection, TLS pinning, discovery, WoL
-│   │   ├── data/            Room, DataStore, repositories
-│   │   └── design/          Matrix theme, components, animations
-│   └── feature/
-│       ├── hosts/           discovery, pairing, host list
-│       ├── touchpad/
-│       ├── keyboard/
-│       ├── media/
-│       ├── power/
-│       ├── remotes/         renders daemon-served layouts
-│       ├── files/
-│       └── settings/
+│       ├── app/             wiring, lifecycle, watchers (lock, foreground, clipboard, volume)
+│       ├── config/          config.yaml, paths, defaults
+│       ├── server/          TLS 1.3, WebSocket, sessions, rate limits, pairing endpoint
+│       ├── pairing/         identity + certificate, device store, pairing windows, QR payload
+│       ├── discovery/       own mDNS responder, UDP beacon
+│       ├── proto/           message types, binary codec, key names, verification phrase
+│       ├── router/          dispatch, permission checks, input worker
+│       ├── remotes/         YAML loader, executor; builtin/*.yaml embedded
+│       ├── platform/        interfaces, Fake, file browser
+│       │   └── windows/     Win32 via the standard syscall package (build tag: windows)
+│       ├── tray/            own Shell_NotifyIcon tray (Windows), no-op elsewhere
+│       ├── adminui/         embedded loopback page (pairing QR, devices, permissions, logs)
+│       ├── client/          Go client used by korokctl and the end-to-end test
+│       ├── netinfo/         LAN addresses, MAC, peer checks
+│       └── logring/         in-memory log tail for the admin page
+├── android/                 Gradle project, single :app module
+│   └── app/src/main/java/dev/korokmote/app/
+│       ├── protocol/        message models, binary frames, phrase, key names
+│       ├── net/             pinning, pairing, discovery, connection, manager, WoL
+│       ├── data/            paired hosts (Keystore-encrypted tokens), settings
+│       ├── service/         foreground service + media notification, Quick Settings tile
+│       ├── design/          Matrix theme, rain, effects, components, haptics
+│       └── ui/              navigation, screens, touchpad engine, remote renderer, QR scanner
 ├── protocol/
-│   ├── schema/              JSON Schema for every message
-│   └── vectors/             golden test vectors shared by Go and Kotlin tests
-├── remotes/                 built-in remote definitions (YAML), embedded into the daemon
+│   ├── wordlist.txt         256 words for verification phrases
+│   └── vectors/             golden vectors used by both the Go and Kotlin tests
+├── installer/               NSIS script and artwork
+├── assets/                  icon sources
+├── build.sh                 builds dist/ (Windows binaries, installer, zips)
 ├── docs/
-└── .github/workflows/
+└── .github/workflows/       ci.yml, release.yml
 ```
 
 ## Key decisions
 
-### Go for the daemon
+### Go for the daemon, with almost no dependencies
 
-A single static binary, no runtime to install, fast start, small memory footprint, and good Win32 access through `golang.org/x/sys/windows` without cgo. Cross-compiling from any OS keeps CI simple. The platform layer is behind interfaces so Linux/macOS can be added later without touching the server or the remotes engine.
+A single static binary, no runtime to install, fast start, small memory footprint. Win32 is reached through the standard `syscall` package (DLLs loaded by absolute System32 path), and the tray icon and mDNS responder are implemented in-repo. The only third-party modules are `coder/websocket`, `skip2/go-qrcode` and `goccy/go-yaml`, none of which have dependencies of their own. Cross-compiling from any OS keeps CI simple. The platform layer is behind interfaces so Linux/macOS can be added later without touching the server or the remotes engine.
 
 ### The daemon is a tray process, not a Windows service
 
@@ -120,7 +117,9 @@ The app stores paired hosts (name, last address, MAC, certificate fingerprint, d
 
 ## Testing strategy
 
-- `protocol/vectors`: each message has a golden encoded form. Go and Kotlin unit tests both encode and decode against the same files, so the two sides cannot drift.
+- `protocol/vectors`: binary frames, verification phrases and example messages. Go and Kotlin unit tests both run against the same files, so the two sides cannot drift.
+- `daemon/internal/server/e2e_test.go`: pairing (QR and short code), pin rejection, single-use codes, lockout, live permission changes, held-key release on disconnect, revoke.
+- `android/.../LiveDaemonTest.kt`: the app's own networking code against a running daemon (`-Pkorok.e2e=host:port:fp:code`).
 - Daemon: platform interfaces have fakes; router and remotes engine are tested without Windows. Win32 code has a small set of tests that run only on the Windows CI runner.
 - `korokctl`: scripted end-to-end checks against a running daemon and a latency benchmark (`korokctl bench`).
 - Android: codec and view-model unit tests on the JVM; Compose screenshot tests for the design system components.

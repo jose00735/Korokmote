@@ -2,7 +2,7 @@
 
 A remote is a YAML file that describes a screen layout and what each control does. The daemon loads remotes from two places:
 
-1. Built-ins in the repo's `remotes/` folder, embedded in the binary.
+1. Built-ins in `daemon/internal/remotes/builtin/`, embedded in the binary.
 2. `%APPDATA%\Korokmote\remotes\`, which is watched for changes. A user file with the same `id` replaces the built-in.
 
 The app asks for the list, fetches a layout, renders it with its own widgets and sends `remotes.act` when the user touches a control. The app never sees how an action is implemented.

@@ -1,6 +1,6 @@
 # Android controller
 
-Kotlin, Jetpack Compose, single activity. `minSdk 26`, target the current SDK. Package: `dev.korokmote.app`.
+Kotlin, Jetpack Compose, single activity. `minSdk 29` (Android 10, the first release with TLS 1.3 on by default, which the daemon requires), `targetSdk 35`. Package: `dev.korokmote.app`.
 
 All dependencies must be open source so the app can ship on F-Droid: no Google Play Services, no ML Kit, no Firebase.
 
@@ -9,36 +9,31 @@ All dependencies must be open source so the app can ship on F-Droid: no Google P
 | Concern | Choice |
 |---|---|
 | UI | Jetpack Compose + Material 3 (heavily themed, see `DESIGN.md`) |
-| Navigation | Navigation Compose, type-safe routes |
+| Navigation | Small in-house back stack (`ui/Nav.kt`); route changes trigger the glitch transition |
 | State | ViewModel + `StateFlow`, unidirectional data flow |
-| DI | Hilt |
+| DI | Manual graph in `KorokApp` (no Hilt) |
 | Networking | OkHttp WebSocket with a custom `X509TrustManager` that pins the daemon certificate |
 | Serialisation | kotlinx.serialization (JSON), hand-written binary codec for pointer frames |
 | Discovery | `NsdManager` (`_korokmote._tcp`), UDP broadcast fallback |
-| Storage | Room (hosts), DataStore (settings), Android Keystore (AES-GCM key that encrypts device tokens) |
+| Storage | SharedPreferences (hosts as JSON, settings), Android Keystore AES-256-GCM key that encrypts device tokens |
 | QR scanning | CameraX + ZXing core |
 | Background | Foreground service of type `connectedDevice` with a media-style notification |
 | Tests | JUnit, Turbine, Compose UI tests, screenshot tests for `core:design` |
 
-## Modules
+## Structure
+
+For v1, everything lives in one `:app` module, split into packages that follow the module plan. That keeps the build fast and simple, and the packages can become modules later without any code changes.
 
 ```
-app                 MainActivity, NavHost, Hilt graph
-core:protocol       Message models + codecs. Pure Kotlin/JVM, tested against protocol/vectors
-core:network        KorokConnection, ConnectionService, Discovery, WakeOnLan, pinning
-core:data           HostRepository, SettingsRepository, Room, DataStore, Keystore crypto
-core:design         Theme, tokens, components, animations (no feature knowledge)
-feature:hosts       Discover, pair (QR / manual), host list, connect
-feature:touchpad    Touchpad surface and gesture engine
-feature:keyboard    Text entry, special keys, shortcuts grid
-feature:media       Transport controls, volume, output device picker
-feature:power       Power actions with hold-to-confirm, Wake-on-LAN
-feature:remotes     Remote list and renderer for daemon-served layouts
-feature:files       File browser and app launcher
-feature:settings    Animation intensity, pointer speed, haptics, about
+protocol/   Message models, binary frames, verification phrase, key names (pure Kotlin, JVM-tested)
+net/        KorokConnection, ConnectionManager (reconnect, events), Pinning, Pairing, Discovery, WakeOnLan
+data/       HostStore (Keystore-encrypted tokens), SettingsStore
+service/    ConnectionService (foreground, media-style notification), PlayPauseTile
+design/     Theme tokens, DigitalRain, DecodeText, glitch/sweep/CRT effects, components, haptics
+ui/         AppRoot, Nav, screens, TouchpadEngine, remote renderer, QR scanner
 ```
 
-Feature modules depend on `core:*` only, never on each other.
+`design/` knows nothing about features; `ui/` screens depend on `net/`, `data/` and `design/`.
 
 ## Connection layer
 

@@ -12,6 +12,10 @@ Replace a paid remote-control app with something we own: a Windows daemon and an
 - iOS client.
 - Controlling the lock screen, UAC prompts, or elevated windows by default (see `SECURITY.md` and `DAEMON.md`, "Windows limits").
 
+## Status (v1.0.0)
+
+M0–M5 are implemented. M6 is ready except for code signing: the installer, portable zips, APK and the release workflow all exist, but there is no Authenticode certificate yet, and the F-Droid metadata hasn't been submitted. Verified so far: Go unit and end-to-end tests, Kotlin tests on the shared vectors, the app's networking code against a live daemon, and the Windows binary and installer under Wine. **Not yet verified on real Windows hardware or a physical phone.** That's the next step: work through `docs/TESTING.md` there.
+
 ## Milestones
 
 Each milestone ends with something usable. Do them in order; do not start animations polish before M2 works end to end.

@@ -1,6 +1,6 @@
 # Windows daemon (`korokmoted`)
 
-Language: Go (current stable). Target: `windows/amd64` first, `windows/arm64` when convenient. No cgo.
+Language: Go 1.24+. Targets: `windows/amd64` and `windows/arm64`. No cgo, and no `golang.org/x/...` modules: Win32 is reached through the standard `syscall` package.
 
 Build: `go build -ldflags "-H=windowsgui -s -w" ./cmd/korokmoted` (the `windowsgui` flag hides the console window).
 
@@ -23,19 +23,17 @@ Build: `go build -ldflags "-H=windowsgui -s -w" ./cmd/korokmoted` (the `windowsg
 
 ## Packages and dependencies
 
-Check for the latest maintained versions when implementing; these are the intended choices, kept few on purpose.
-
-| Concern | Package | Notes |
+| Concern | Implementation | Notes |
 |---|---|---|
-| Win32 calls | `golang.org/x/sys/windows` | `user32`, `kernel32`, `powrprof`, `shell32` via lazy DLL procs |
-| WebSocket | `github.com/coder/websocket` | context-aware, small API |
-| TLS | standard library `crypto/tls` | TLS 1.3 only, ECDSA P-256 self-signed certificate |
-| mDNS | `github.com/libp2p/zeroconf/v2` | advertises `_korokmote._tcp` |
-| Tray | `fyne.io/systray` | no cgo on Windows |
-| Core Audio (volume) | `github.com/go-ole/go-ole` + `github.com/moutend/go-wca` | `IAudioEndpointVolume`, device enumeration |
+| Win32 calls | standard `syscall` | DLLs loaded from `%SystemRoot%\System32` by absolute path |
+| WebSocket | `github.com/coder/websocket` | no dependencies |
+| TLS | standard `crypto/tls` | TLS 1.3 only, ECDSA P-256 self-signed certificate (20 years) |
+| mDNS | `internal/discovery` (own) | multicast responder for `_korokmote._tcp`, per-interface replies |
+| Tray | `internal/tray` (own) | `Shell_NotifyIconW`, hidden window, rebuilt menu, balloon notices, survives Explorer restarts |
+| Core Audio (volume) | `internal/platform/windows/audio.go` (own) | hand-written COM vtable calls on a dedicated MTA thread |
 | QR code | `github.com/skip2/go-qrcode` | rendered into the admin page |
-| YAML | `gopkg.in/yaml.v3` | remotes and config |
-| Logging | standard library `log/slog` | rotating file in `%LOCALAPPDATA%` |
+| YAML | `github.com/goccy/go-yaml` | remotes and config |
+| Logging | standard `log/slog` | file in `%LOCALAPPDATA%\Korokmote\logs`, rotated at 5 MB, last 200 lines on the admin page |
 
 ## Platform layer
 
@@ -108,10 +106,13 @@ type Clipboard interface {
 | Shutdown / restart | `InitiateSystemShutdownExW` after enabling `SeShutdownPrivilege`; `AbortSystemShutdownW` to cancel |
 | Monitor off | `SendMessage(HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, 2)` |
 | Window list / focus | `EnumWindows`, `GetWindowTextW`, `IsWindowVisible`, `SetForegroundWindow` (with `AttachThreadInput` workaround) |
-| Foreground change | `SetWinEventHook(EVENT_SYSTEM_FOREGROUND)` |
+| Foreground change | `GetForegroundWindow` polled every 700 ms while a phone is connected |
 | Open file / launch | `ShellExecuteW` |
 | Clipboard | `OpenClipboard`, `GetClipboardData(CF_UNICODETEXT)`, `SetClipboardData` |
-| Session locked state | `WTSRegisterSessionNotification` -> `WM_WTSSESSION_CHANGE` |
+| Session locked state | `OpenInputDesktop` + `GetUserObjectInformationW(UOI_NAME)` polled (locked when the input desktop is not `Default`) |
+| Clipboard change | `GetClipboardSequenceNumber` polled |
+| Volume / mute | `IMMDeviceEnumerator`, `IAudioEndpointVolume` (`SetMasterVolumeLevelScalar`, `SetMute`), friendly names via `IPropertyStore` |
+| Autostart | `HKCU\...\Run` value `Korokmote`; on first run the daemon follows the installer's choice in `HKLM\Software\Korokmote\Autostart` |
 
 ### Input worker
 
@@ -162,7 +163,9 @@ file_roots:              # what the file browser may show; empty = user profile 
 
 ## Packaging
 
-- Release artefacts: `korokmoted.exe` (portable) and an installer that adds the firewall rule (private profile), the autostart entry and a Start Menu shortcut.
+- Release artefacts (from `./build.sh`): `korokmote-setup-<v>-x64.exe` (native 64-bit NSIS installer), and `korokmote-<v>-windows-{amd64,arm64}-portable.zip`, plus `SHA256SUMS.txt`.
+- The installer copies the binaries into Program Files and adds a firewall rule for private and domain networks (public is optional and off by default). It also creates Start Menu shortcuts (*Korokmote*, *Pair a phone*, *Uninstall*), an Add/Remove Programs entry and the autostart choice. On its finish page it launches the daemon un-elevated through Explorer. The uninstaller removes all of that, and can also remove your settings if you choose to.
+- Icon and DPI-aware manifest are embedded with `.syso` resources (generated with `akavel/rsrc`).
 - Versioning: `git describe` injected with `-ldflags -X`.
 - Releases are code-signed when a certificate is available; SHA-256 checksums are always published.
 

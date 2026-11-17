@@ -12,7 +12,7 @@ Korokmote is an open-source PC remote: a Go daemon for Windows (`daemon/`) and a
 
 ## Daemon (Go)
 
-- No cgo. Win32 access through `golang.org/x/sys/windows`.
+- No cgo and no `golang.org/x/...`: Win32 access goes through the standard `syscall` package (DLLs by absolute System32 path).
 - OS-specific code only under `internal/platform/windows` with `//go:build windows`; everything else must compile and test on Linux.
 - All `SendInput` calls go through the single input worker.
 - Run before committing: `gofmt -l .`, `go vet ./...`, `go test ./...`, and `GOOS=windows GOARCH=amd64 go build ./...`.
@@ -20,11 +20,16 @@ Korokmote is an open-source PC remote: a Go daemon for Windows (`daemon/`) and a
 
 ## Android (Kotlin)
 
-- Feature modules depend only on `core:*`.
-- Colours, type, shapes and durations come from `core:design` tokens; no literals in feature code.
+- `design/` must not depend on `ui/` or `net/` (it may read the settings enums in `data/`); screens live in `ui/`.
+- Colours, type, shapes and durations come from `design/` tokens; no literals in feature code.
 - Animations run in the draw phase and must not cause recomposition of content or delay input (see `docs/DESIGN.md`).
 - Every animation honours the intensity setting and the system "remove animations" setting.
-- Run before committing: `./gradlew ktlintCheck test`.
+- Run before committing: `./gradlew test assembleDebug`.
+
+## Building
+
+- `./build.sh <version>` builds the Windows binaries, the installer and the portable zips into `dist/` (needs Go, NSIS 3, zip).
+- Android release signing reads `android/keystore.properties` or the `KOROKMOTE_*` environment variables (see `.github/workflows/release.yml`). Never commit a keystore.
 
 ## Commits
 

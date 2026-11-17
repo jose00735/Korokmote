@@ -43,7 +43,7 @@ Discovery data is unauthenticated. It is only ever used to find an address; iden
    { "code": "<c>", "device": { "id": "<uuid>", "name": "Pixel 8", "platform": "android", "app": "1.0.0" } }
    ```
 
-3. The daemon replies `200 { "token": "<256-bit base64url>", "daemon": { "id": "...", "name": "..." } }`, stores only `SHA-256(token)`, closes the pairing window, and shows a tray notification naming the new device.
+3. The daemon replies `200 { "token": "<256-bit base64url>", "daemon": { "id": "...", "name": "..." }, "phrase": "word-word-word" }`, stores only `SHA-256(token)`, closes the pairing window, and shows a tray notification with the device name and the phrase. The client recomputes the phrase from the fingerprint it actually saw and rejects the pairing if they differ.
 
 4. Both sides show the same **verification phrase** (three words derived from `SHA-256(fp || device.id)`) as a visual confirmation.
 
@@ -156,9 +156,8 @@ Frames with an unknown opcode are ignored. Binary frames before `hello` close th
 | `win.focus` / `win.close` | `{ "h": 123456 }` |
 | `apps.list` | `{}` -> `{ "apps": [ { "id", "name" } ] }` |
 | `apps.launch` | `{ "id": "…" }` |
-| `apps.icon` | `{ "id": "…", "size": 64 }` -> `{ "png": "<base64>" }` |
 | `fs.roots` | `{}` -> `{ "entries": [ … ] }` |
-| `fs.list` | `{ "path": "C:\\Users\\jose\\Videos" }` -> `{ "entries": [ { "name", "dir", "size", "mtime" } ] }` |
+| `fs.list` | `{ "path": "C:\\Users\\jose\\Videos" }` -> `{ "entries": [ { "name", "path", "dir", "size", "mtime" } ] }` |
 | `fs.open` | `{ "path": "…" }` |
 | `clip.get` | `{}` -> `{ "text": "…" }` |
 | `clip.set` | `{ "text": "…" }` |
@@ -171,6 +170,19 @@ Frames with an unknown opcode are ignored. Binary frames before `hello` close th
 | `remotes.list` | `{}` -> `{ "remotes": [ { "id", "name", "icon", "match": ["vlc.exe"] } ] }` |
 | `remotes.get` | `{ "id": "vlc" }` -> the layout document (`REMOTES.md`) |
 | `remotes.act` | `{ "remote": "vlc", "action": "vol_up", "args": { } }` |
+
+### Permissions per message
+
+| Permission | Messages |
+|---|---|
+| `input` | `key`, `combo`, `text`, `click`, binary frames |
+| `media` | `media` |
+| `audio` | `audio.*` |
+| `power` | `power` |
+| `launcher` | `apps.*`, `win.*` |
+| `files` | `fs.*` |
+| `clipboard` | `clip.*` |
+| none | `remotes.list`, `remotes.get`; `remotes.act` checks each primitive's own permission |
 
 ## 8. Key names
 
