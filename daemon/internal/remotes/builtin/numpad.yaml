@@ -1,0 +1,45 @@
+id: numpad
+name: Numpad
+icon: grid
+version: 1
+actions:
+  n0: { key: NUM0 }
+  n1: { key: NUM1 }
+  n2: { key: NUM2 }
+  n3: { key: NUM3 }
+  n4: { key: NUM4 }
+  n5: { key: NUM5 }
+  n6: { key: NUM6 }
+  n7: { key: NUM7 }
+  n8: { key: NUM8 }
+  n9: { key: NUM9 }
+  add: { key: NUM_ADD }
+  sub: { key: NUM_SUB }
+  mul: { key: NUM_MUL }
+  div: { key: NUM_DIV }
+  dot: { key: NUM_DOT }
+  enter: { key: ENTER }
+  back: { key: BACKSPACE }
+  numlock: { key: NUMLOCK }
+layout:
+  - grid:
+      columns: 4
+      items:
+        - button: { label: "NUM", action: numlock }
+        - button: { label: "/", action: div }
+        - button: { label: "*", action: mul }
+        - button: { label: "-", action: sub }
+        - button: { label: "7", action: n7 }
+        - button: { label: "8", action: n8 }
+        - button: { label: "9", action: n9 }
+        - button: { label: "+", action: add }
+        - button: { label: "4", action: n4 }
+        - button: { label: "5", action: n5 }
+        - button: { label: "6", action: n6 }
+        - button: { label: "<-", action: back, repeat: true }
+        - button: { label: "1", action: n1 }
+        - button: { label: "2", action: n2 }
+        - button: { label: "3", action: n3 }
+        - button: { label: "ENT", action: enter, style: primary }
+        - button: { label: "0", action: n0 }
+        - button: { label: ".", action: dot }

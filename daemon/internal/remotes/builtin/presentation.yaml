@@ -1,0 +1,30 @@
+id: presentation
+name: Presentation
+icon: slides
+match: [powerpnt.exe, soffice.bin, acrord32.exe, acrobat.exe, sumatrapdf.exe]
+version: 1
+actions:
+  next:    { key: RIGHT }
+  prev:    { key: LEFT }
+  start:   { key: F5 }
+  current: { combo: [SHIFT, F5] }
+  end:     { key: ESC }
+  black:   { key: B }
+  white:   { key: W }
+  first:   { key: HOME }
+  last:    { key: END }
+layout:
+  - label: { text: "> SLIDES" }
+  - row:
+      - button: { label: "START", action: start }
+      - button: { label: "FROM HERE", action: current }
+      - button: { label: "END", action: end, style: danger }
+  - row:
+      - button: { icon: prev, label: "PREV", action: prev, size: 1, repeat: true }
+      - button: { icon: next, label: "NEXT", action: next, size: 2, style: primary, repeat: true }
+  - row:
+      - button: { label: "FIRST", action: first }
+      - button: { label: "BLACK", action: black }
+      - button: { label: "WHITE", action: white }
+      - button: { label: "LAST", action: last }
+  - touchpad: { height: 3 }

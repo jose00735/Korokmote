@@ -1,0 +1,33 @@
+id: spotify
+name: Spotify
+icon: music
+match: [spotify.exe]
+version: 1
+actions:
+  toggle:   { media: playpause }
+  next:     { media: next }
+  prev:     { media: prev }
+  vol_up:   { combo: [CTRL, UP] }
+  vol_down: { combo: [CTRL, DOWN] }
+  like:     { combo: [ALT, SHIFT, B] }
+  shuffle:  { combo: [CTRL, S] }
+  repeat:   { combo: [CTRL, R] }
+  search:
+    - { focus: { exe: spotify.exe } }
+    - { combo: [CTRL, K] }
+    - { wait: 200ms }
+    - { text: "${args.query}" }
+  open:
+    - { launch: "spotify" }
+layout:
+  - input: { label: "SEARCH", action: search, placeholder: "> _" }
+  - row:
+      - button: { icon: prev, action: prev }
+      - button: { icon: play_pause, action: toggle, size: 2, style: primary }
+      - button: { icon: next, action: next }
+  - row:
+      - button: { label: "SHUFFLE", action: shuffle }
+      - button: { label: "REPEAT", action: repeat }
+      - button: { label: "LIKE", action: like }
+  - slider: { label: "APP VOLUME", up: vol_up, down: vol_down, steps: 10 }
+  - button: { label: "OPEN SPOTIFY", action: open }

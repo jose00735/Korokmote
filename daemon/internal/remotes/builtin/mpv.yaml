@@ -1,0 +1,35 @@
+id: mpv
+name: mpv
+icon: play
+match: [mpv.exe]
+version: 1
+actions:
+  toggle:   { key: SPACE }
+  back5:    { key: LEFT }
+  fwd5:     { key: RIGHT }
+  back60:   { key: DOWN }
+  fwd60:    { key: UP }
+  vol_up:   { key: "0" }
+  vol_down: { key: "9" }
+  mute:     { key: M }
+  full:     { key: F }
+  subs:     { key: V }
+  next:     { combo: [SHIFT, PERIOD] }
+  prev:     { combo: [SHIFT, COMMA] }
+  quit:     { key: Q }
+layout:
+  - row:
+      - button: { label: "<<60", action: back60, repeat: true }
+      - button: { label: "<<5", action: back5, repeat: true }
+      - button: { icon: play_pause, action: toggle, size: 2, style: primary }
+      - button: { label: "5>>", action: fwd5, repeat: true }
+      - button: { label: "60>>", action: fwd60, repeat: true }
+  - row:
+      - button: { icon: prev, action: prev }
+      - button: { label: "FULL", action: full }
+      - button: { label: "SUBS", action: subs }
+      - button: { icon: next, action: next }
+  - slider: { label: "VOLUME", up: vol_up, down: vol_down, steps: 20 }
+  - row:
+      - button: { label: "MUTE", action: mute }
+      - button: { label: "QUIT", action: quit, style: danger }

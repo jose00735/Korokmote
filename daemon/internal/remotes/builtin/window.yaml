@@ -1,0 +1,37 @@
+id: window
+name: Windows
+icon: window
+version: 1
+actions:
+  switch:       { combo: [ALT, TAB] }
+  task_view:    { combo: [WIN, TAB] }
+  desktop:      { combo: [WIN, D] }
+  snap_left:    { combo: [WIN, LEFT] }
+  snap_right:   { combo: [WIN, RIGHT] }
+  maximize:     { combo: [WIN, UP] }
+  minimize:     { combo: [WIN, DOWN] }
+  close:        { combo: [ALT, F4] }
+  vd_left:      { combo: [CTRL, WIN, LEFT] }
+  vd_right:     { combo: [CTRL, WIN, RIGHT] }
+  vd_new:       { combo: [CTRL, WIN, D] }
+  explorer:     { combo: [WIN, E] }
+  settings:     { combo: [WIN, I] }
+  task_manager: { combo: [CTRL, SHIFT, ESC] }
+  screenshot:   { combo: [WIN, SHIFT, S] }
+layout:
+  - row:
+      - button: { label: "ALT+TAB", action: switch, size: 2, style: primary }
+      - button: { label: "TASKS", action: task_view }
+      - button: { label: "DESKTOP", action: desktop }
+  - dpad: { up: maximize, down: minimize, left: snap_left, right: snap_right, center: switch }
+  - row:
+      - button: { label: "<DESK", action: vd_left }
+      - button: { label: "+DESK", action: vd_new }
+      - button: { label: "DESK>", action: vd_right }
+  - row:
+      - button: { label: "FILES", action: explorer }
+      - button: { label: "SETTINGS", action: settings }
+      - button: { label: "SNIP", action: screenshot }
+  - row:
+      - button: { label: "TASK MGR", action: task_manager }
+      - button: { label: "CLOSE", action: close, style: danger }

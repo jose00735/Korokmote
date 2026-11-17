@@ -1,0 +1,25 @@
+id: netflix
+name: Netflix
+icon: video
+version: 1
+actions:
+  toggle:  { key: SPACE }
+  back10:  { key: LEFT }
+  fwd10:   { key: RIGHT }
+  full:    { key: F }
+  mute:    { key: M }
+  skip:    { key: S }
+  vol_up:  { key: UP }
+  vol_down: { key: DOWN }
+  open:    { open: "https://www.netflix.com" }
+layout:
+  - row:
+      - button: { label: "<<10", action: back10, repeat: true }
+      - button: { icon: play_pause, action: toggle, size: 2, style: primary }
+      - button: { label: "10>>", action: fwd10, repeat: true }
+  - row:
+      - button: { label: "SKIP INTRO", action: skip }
+      - button: { label: "FULL", action: full }
+      - button: { label: "MUTE", action: mute }
+  - slider: { label: "PLAYER VOLUME", up: vol_up, down: vol_down, steps: 10 }
+  - button: { label: "OPEN NETFLIX", action: open }

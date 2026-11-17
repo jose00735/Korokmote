@@ -1,0 +1,37 @@
+id: youtube
+name: YouTube
+icon: video
+version: 1
+actions:
+  toggle:   { key: K }
+  back10:   { key: J }
+  fwd10:    { key: L }
+  back5:    { key: LEFT }
+  fwd5:     { key: RIGHT }
+  full:     { key: F }
+  theater:  { key: T }
+  captions: { key: C }
+  mute:     { key: M }
+  next:     { combo: [SHIFT, N] }
+  prev:     { combo: [SHIFT, P] }
+  faster:   { combo: [SHIFT, PERIOD] }
+  slower:   { combo: [SHIFT, COMMA] }
+  open:     { open: "https://www.youtube.com" }
+  search:
+    - { open: "https://www.youtube.com/results?search_query=${args.query}" }
+layout:
+  - input: { label: "SEARCH YOUTUBE", action: search, placeholder: "> _" }
+  - row:
+      - button: { label: "<<10", action: back10, repeat: true }
+      - button: { icon: play_pause, action: toggle, size: 2, style: primary }
+      - button: { label: "10>>", action: fwd10, repeat: true }
+  - row:
+      - button: { icon: prev, action: prev }
+      - button: { label: "FULL", action: full }
+      - button: { label: "CC", action: captions }
+      - button: { icon: next, action: next }
+  - row:
+      - button: { label: "SLOWER", action: slower }
+      - button: { label: "MUTE", action: mute }
+      - button: { label: "FASTER", action: faster }
+  - button: { label: "OPEN YOUTUBE", action: open }

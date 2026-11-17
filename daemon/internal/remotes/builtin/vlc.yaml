@@ -1,0 +1,42 @@
+id: vlc
+name: VLC
+icon: play
+match: [vlc.exe]
+version: 1
+actions:
+  toggle:   { key: SPACE }
+  stop:     { key: S }
+  back10:   { combo: [ALT, LEFT] }
+  fwd10:    { combo: [ALT, RIGHT] }
+  back60:   { combo: [CTRL, LEFT] }
+  fwd60:    { combo: [CTRL, RIGHT] }
+  vol_up:   { combo: [CTRL, UP] }
+  vol_down: { combo: [CTRL, DOWN] }
+  mute:     { key: M }
+  full:     { key: F }
+  subs:     { key: V }
+  audio:    { key: B }
+  next:     { key: N }
+  prev:     { key: P }
+  open:
+    - { launch: "vlc" }
+    - { wait: 800ms }
+    - { focus: { exe: vlc.exe } }
+layout:
+  - row:
+      - button: { label: "<<60", action: back60, repeat: true }
+      - button: { label: "<<10", action: back10, repeat: true }
+      - button: { icon: play_pause, action: toggle, size: 2, style: primary }
+      - button: { label: "10>>", action: fwd10, repeat: true }
+      - button: { label: "60>>", action: fwd60, repeat: true }
+  - row:
+      - button: { icon: prev, action: prev }
+      - button: { icon: stop, action: stop }
+      - button: { icon: next, action: next }
+  - row:
+      - button: { label: "FULL", action: full }
+      - button: { label: "SUBS", action: subs }
+      - button: { label: "AUDIO", action: audio }
+      - button: { label: "MUTE", action: mute }
+  - slider: { label: "VOLUME", up: vol_up, down: vol_down, steps: 20 }
+  - button: { label: "OPEN VLC", action: open }

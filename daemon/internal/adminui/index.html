@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Korokmote</title>
+<style>
+  :root {
+    --void:#000; --surface:#050A05; --raised:#0A140A; --dim:#003B00; --ph:#008F11;
+    --bright:#00FF41; --head:#D5FFD9; --warn:#FFB000; --danger:#FF2A2A;
+    --mono: "JetBrains Mono", "Cascadia Mono", Consolas, "Courier New", monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; background:var(--void); color:var(--bright); font-family:var(--mono); }
+  canvas#rain { position:fixed; inset:0; z-index:0; opacity:.22; }
+  .scan { position:fixed; inset:0; z-index:2; pointer-events:none;
+    background: repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0 2px, rgba(0,0,0,.18) 2px 3px); }
+  main { position:relative; z-index:1; max-width:980px; margin:0 auto; padding:28px 20px 60px; }
+  h1 { font-size:28px; letter-spacing:4px; margin:0 0 4px; text-shadow:0 0 8px rgba(0,255,65,.45); }
+  .status { color:var(--ph); font-size:13px; margin-bottom:28px; }
+  .status b { color:var(--bright); font-weight:normal; }
+  h2 { font-size:15px; letter-spacing:2px; color:var(--bright); margin:34px 0 12px; }
+  .panel { background:var(--surface); border:1px solid var(--dim); padding:18px;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
+  .grid { display:grid; grid-template-columns: 380px 1fr; gap:22px; align-items:start; }
+  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+  .qrbox { background:#fff; padding:14px; border:2px solid var(--bright); width:360px; max-width:100%;
+    box-shadow:0 0 18px rgba(0,255,65,.35); }
+  .qrbox img { width:100%; display:block; image-rendering:pixelated; }
+  .code { font-size:30px; letter-spacing:6px; color:var(--head); margin:8px 0; }
+  .muted { color:var(--ph); font-size:13px; line-height:1.6; }
+  button { font-family:var(--mono); background:var(--void); color:var(--bright); border:1px solid var(--ph);
+    padding:10px 16px; font-size:13px; letter-spacing:1px; cursor:pointer; text-transform:uppercase;
+    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px); }
+  button:hover { border-color:var(--bright); background:var(--raised); }
+  button:active { background:var(--bright); color:var(--void); }
+  button.danger { color:var(--danger); border-color:#8F1111; }
+  button.danger:active { background:var(--danger); color:#000; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  td, th { text-align:left; padding:8px 6px; border-bottom:1px solid var(--dim); vertical-align:top; }
+  th { color:var(--ph); font-weight:normal; }
+  .idx { color:var(--ph); }
+  .on { color:var(--bright); } .off { color:var(--ph); }
+  label.perm { display:inline-block; margin:2px 10px 2px 0; color:var(--ph); cursor:pointer; }
+  label.perm input { accent-color: var(--bright); }
+  pre { margin:0; max-height:260px; overflow:auto; font-size:12px; color:var(--ph); white-space:pre-wrap; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .bar { height:4px; background:var(--dim); margin-top:10px; }
+  .bar > div { height:4px; background:var(--bright); transition: width 1s linear; }
+  .cursor { animation: blink 1.06s steps(1) infinite; }
+  @keyframes blink { 50% { opacity:0; } }
+  .decode { white-space:pre; }
+</style>
+</head>
+<body>
+<canvas id="rain"></canvas>
+<div class="scan"></div>
+<main>
+  <h1 class="decode" data-text="KOROKMOTE">KOROKMOTE</h1>
+  <div class="status" id="status">&gt; connecting<span class="cursor">█</span></div>
+
+  <h2>[ PAIR A DEVICE ]</h2>
+  <div class="panel grid">
+    <div id="qrcol">
+      <div class="muted">No pairing window is open.</div>
+    </div>
+    <div>
+      <p class="muted">1. Open Korokmote on your phone and tap <b>[ + PAIR ]</b>.<br>
+      2. Scan the code on the left, or type the address and the short code.<br>
+      3. Check that the three words match on both screens.</p>
+      <div class="row" id="pairbtns"></div>
+      <p class="muted" id="hosts"></p>
+    </div>
+  </div>
+
+  <h2>[ DEVICES ]</h2>
+  <div class="panel"><table id="devices"></table></div>
+
+  <h2>[ CONTROL ]</h2>
+  <div class="panel row" id="control"></div>
+
+  <h2>[ LOG ]</h2>
+  <div class="panel"><pre id="logs"></pre></div>
+</main>
+<script>
+const glyphs = "ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ0123456789";
+const rnd = s => s[Math.floor(Math.random()*s.length)];
+// Digital rain
+(function rain(){
+  const c = document.getElementById('rain'), x = c.getContext('2d');
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  let cols, drops, size = 16;
+  const fit = () => { c.width = innerWidth; c.height = innerHeight; cols = Math.ceil(c.width/size);
+    drops = Array.from({length: cols}, () => Math.random()*-50); };
+  fit(); addEventListener('resize', fit);
+  setInterval(() => {
+    x.fillStyle = 'rgba(0,0,0,0.12)'; x.fillRect(0,0,c.width,c.height);
+    x.font = size + 'px monospace';
+    for (let i=0;i<cols;i++){
+      const y = drops[i]*size;
+      x.fillStyle = '#D5FFD9'; x.fillText(rnd(glyphs), i*size, y);
+      x.fillStyle = '#00FF41'; x.fillText(rnd(glyphs), i*size, y-size);
+      if (y > c.height && Math.random() > 0.975) drops[i] = 0;
+      drops[i] += 0.6 + (i%5)*0.12;
+    }
+  }, 33);
+})();
+// Decode text effect
+function decode(el, text) {
+  if (el._t) clearInterval(el._t);
+  let locked = 0; const step = Math.max(1, Math.ceil(text.length/20));
+  el._t = setInterval(() => {
+    locked += step;
+    el.textContent = text.split('').map((ch,i) => i < locked || ch === ' ' ? ch : rnd(glyphs)).join('');
+    if (locked >= text.length) { clearInterval(el._t); el.textContent = text; }
+  }, 22);
+}
+document.querySelectorAll('.decode').forEach(el => decode(el, el.dataset.text));
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function api(path, body) {
+  const r = await fetch(path, {method:'POST', headers:{'X-Korokmote':'1','Content-Type':'application/json'}, body: JSON.stringify(body||{})});
+  if (!r.ok) { const e = await r.json().catch(()=>({error:r.statusText})); alert(e.error || 'Request failed'); }
+  refresh();
+}
+let lastPairOpen = null, lastCode = '';
+function render(s) {
+  const st = document.getElementById('status');
+  const online = s.devices ? s.devices.filter(d => d.online).length : 0;
+  st.innerHTML = `&gt; <b>${esc(s.name)}</b> :: port ${s.port} :: ${online} online :: ${s.paused ? '<span style="color:var(--warn)">INPUT PAUSED</span>' : 'ready'} :: v${esc(s.version)}<span class="cursor">█</span>`;
+  const q = document.getElementById('qrcol'), b = document.getElementById('pairbtns');
+  if (s.pairing.open) {
+    if (lastCode !== s.pairing.short_code) {
+      q.innerHTML = `<div class="qrbox"><img alt="Pairing QR code" src="${s.pairing.qr}"></div>
+        <div class="muted" style="margin-top:12px">SHORT CODE</div><div class="code" id="code"></div>
+        <div class="muted" id="exp"></div><div class="bar"><div id="bar"></div></div>`;
+      decode(document.getElementById('code'), s.pairing.short_code);
+      lastCode = s.pairing.short_code;
+    }
+    document.getElementById('exp').textContent = `Closes in ${s.pairing.expires_in}s`;
+    document.getElementById('bar').style.width = Math.max(0, s.pairing.expires_in/120*100) + '%';
+    b.innerHTML = `<button onclick="api('/api/pair/open')">New code</button><button class="danger" onclick="api('/api/pair/close')">Stop pairing</button>`;
+  } else {
+    lastCode = '';
+    q.innerHTML = `<div class="muted">No pairing window is open.</div>`;
+    b.innerHTML = `<button onclick="api('/api/pair/open')">Open pairing window</button>`;
+  }
+  document.getElementById('hosts').innerHTML = `ADDRESS: ${s.hosts.map(h => esc(h)+':'+s.port).join('  ') || 'no network'}<br>FINGERPRINT: ${esc(s.fingerprint.slice(0,16))}…`;
+  const t = document.getElementById('devices');
+  if (!s.devices || !s.devices.length) {
+    t.innerHTML = `<tr><td class="muted">No paired devices yet.</td></tr>`;
+  } else {
+    t.innerHTML = `<tr><th></th><th>DEVICE</th><th>STATUS</th><th>PERMISSIONS</th><th></th></tr>` + s.devices.map((d,i) => `
+      <tr><td class="idx">${String(i).padStart(2,'0')}</td>
+      <td>${esc(d.name)}<div class="muted">${esc(d.platform)} ${esc(d.app)}</div></td>
+      <td class="${d.online?'on':'off'}">${d.online ? 'ONLINE '+esc(d.online) : 'last seen '+new Date(d.last_seen).toLocaleString()}</td>
+      <td>${s.all_perms.map(p => `<label class="perm"><input type="checkbox" data-dev="${esc(d.id)}" value="${p}" ${d.perms.includes(p)?'checked':''}> ${p}</label>`).join('')}</td>
+      <td><button class="danger" data-revoke="${esc(d.id)}">Revoke</button></td></tr>`).join('');
+    t.querySelectorAll('input[type=checkbox]').forEach(cb => cb.onchange = () => {
+      const id = cb.dataset.dev;
+      const perms = [...t.querySelectorAll(`input[data-dev="${CSS.escape(id)}"]:checked`)].map(x => x.value);
+      api('/api/device/perms', {id, perms});
+    });
+    t.querySelectorAll('[data-revoke]').forEach(btn => btn.onclick = () => {
+      if (confirm('Revoke this device? It will need to pair again.')) api('/api/device/revoke', {id: btn.dataset.revoke});
+    });
+  }
+  document.getElementById('control').innerHTML = `
+    <button onclick="api('/api/pause',{on:${!s.paused}})">${s.paused ? 'Resume input' : 'Pause all input'}</button>
+    <button onclick="api('/api/autostart',{on:${!s.autostart}})">${s.autostart ? '[x]' : '[ ]'} Start with Windows</button>`;
+  const lg = document.getElementById('logs');
+  const atBottom = lg.scrollTop + lg.clientHeight >= lg.scrollHeight - 4;
+  lg.textContent = (s.logs || []).join('\n');
+  if (atBottom) lg.scrollTop = lg.scrollHeight;
+}
+async function refresh() {
+  try { const r = await fetch('/api/state'); if (r.ok) render(await r.json()); else document.getElementById('status').textContent = '> session expired: reopen from the tray icon'; }
+  catch (e) { document.getElementById('status').textContent = '> daemon not reachable'; }
+}
+if (location.hash === '#pair') { api('/api/pair/open'); history.replaceState(null, '', '/'); } else refresh();
+setInterval(refresh, 1000);
+</script>
+</body>
+</html>

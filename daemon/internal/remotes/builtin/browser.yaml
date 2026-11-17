@@ -1,0 +1,44 @@
+id: browser
+name: Browser
+icon: globe
+match: [chrome.exe, msedge.exe, firefox.exe, brave.exe, opera.exe, vivaldi.exe]
+version: 1
+actions:
+  back:      { key: BROWSER_BACK }
+  forward:   { key: BROWSER_FWD }
+  refresh:   { key: F5 }
+  new_tab:   { combo: [CTRL, T] }
+  close_tab: { combo: [CTRL, W] }
+  reopen:    { combo: [CTRL, SHIFT, T] }
+  next_tab:  { combo: [CTRL, TAB] }
+  prev_tab:  { combo: [CTRL, SHIFT, TAB] }
+  zoom_in:   { combo: [CTRL, EQUAL] }
+  zoom_out:  { combo: [CTRL, MINUS] }
+  zoom_reset: { combo: [CTRL, "0"] }
+  fullscreen: { key: F11 }
+  page_down: { key: PGDN }
+  page_up:   { key: PGUP }
+  go:
+    - { combo: [CTRL, L] }
+    - { wait: 150ms }
+    - { text: "${args.query}" }
+    - { key: ENTER }
+layout:
+  - input: { label: "URL OR SEARCH", action: go, placeholder: "> _" }
+  - row:
+      - button: { icon: back, label: "BACK", action: back }
+      - button: { icon: refresh, label: "RELOAD", action: refresh }
+      - button: { icon: forward, label: "FWD", action: forward }
+  - row:
+      - button: { label: "<TAB", action: prev_tab }
+      - button: { label: "+TAB", action: new_tab, hold: reopen }
+      - button: { label: "xTAB", action: close_tab, style: danger }
+      - button: { label: "TAB>", action: next_tab }
+  - row:
+      - button: { label: "ZOOM-", action: zoom_out, hold: zoom_reset }
+      - button: { label: "FULL", action: fullscreen }
+      - button: { label: "ZOOM+", action: zoom_in, hold: zoom_reset }
+  - row:
+      - button: { label: "PG UP", action: page_up, repeat: true }
+      - button: { label: "PG DN", action: page_down, repeat: true }
+  - touchpad: { height: 3 }
