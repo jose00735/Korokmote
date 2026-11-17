@@ -1,0 +1,9 @@
+{
+  "description": "Binary input frames (PROTOCOL.md section 6). hex is the exact frame.",
+  "frames": [
+    { "name": "move", "op": 1, "x": 12, "y": -7, "seq": 3, "hex": "010c00f9ff03" },
+    { "name": "scroll", "op": 2, "x": 0, "y": -120, "seq": 255, "hex": "02000088ffff" },
+    { "name": "absolute", "op": 3, "x": 32768, "y": 65535, "seq": 9, "hex": "030080ffff09" },
+    { "name": "button", "op": 4, "button": 2, "down": true, "hex": "040201" }
+  ]
+}

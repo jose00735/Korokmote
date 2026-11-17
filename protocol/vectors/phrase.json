@@ -1,0 +1,7 @@
+{
+  "description": "Verification phrase = words[sha[0]]-words[sha[1]]-words[sha[2]] where sha = SHA-256(lowercase_hex_fingerprint + device_id) and words = protocol/wordlist.txt.",
+  "cases": [
+    { "fp": "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90", "device": "3f2504e0-4f89-41d3-9a0c-0305e82c3301", "phrase": "noodle-nickel-angle" },
+    { "fp": "0000000000000000000000000000000000000000000000000000000000000000", "device": "phone-1", "phrase": "umbra-fiesta-monsoon" }
+  ]
+}

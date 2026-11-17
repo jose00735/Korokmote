@@ -1,0 +1,16 @@
+{
+  "description": "Example control messages. Both implementations must decode these and re-encode them to equivalent JSON.",
+  "messages": [
+    { "t": "hello", "id": 1, "d": { "v": 1, "device": "3f2504e0-4f89-41d3-9a0c-0305e82c3301", "token": "dG9rZW4", "app": "1.0.0" } },
+    { "t": "ok", "re": 1, "d": { "v": 1, "daemon": { "id": "7c1e0000-0000-4000-8000-000000000000", "name": "DESKTOP-JOSE", "os": "windows", "version": "1.0.0" }, "caps": ["input", "media"], "perms": ["input"], "screen": { "w": 2560, "h": 1440 }, "locked": false } },
+    { "t": "key", "d": { "k": "ENTER", "a": "tap" } },
+    { "t": "combo", "id": 7, "d": { "keys": ["CTRL", "SHIFT", "ESC"] } },
+    { "t": "text", "d": { "s": "héllo 👋" } },
+    { "t": "media", "d": { "a": "playpause" } },
+    { "t": "audio.set", "id": 9, "d": { "device": "default", "delta": -0.02 } },
+    { "t": "power", "id": 10, "d": { "a": "shutdown", "delay": 30 } },
+    { "t": "remotes.act", "id": 11, "d": { "remote": "vlc", "action": "vol_up", "args": {} } },
+    { "t": "err", "re": 11, "d": { "code": "forbidden", "msg": "this device lacks the input permission" } },
+    { "t": "ev.audio", "d": { "device": "default", "level": 0.42, "muted": false } }
+  ]
+}
