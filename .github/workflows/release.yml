@@ -1,0 +1,68 @@
+name: Release
+
+# Push a tag like v1.0.1 to build the installer, portable zips and a signed APK,
+# and publish them as a GitHub release.
+#
+# Secrets for APK signing (Settings -> Secrets and variables -> Actions):
+#   KOROKMOTE_KEYSTORE_BASE64   base64 of the .jks file
+#   KOROKMOTE_KEYSTORE_PASSWORD
+#   KOROKMOTE_KEY_ALIAS
+#   KOROKMOTE_KEY_PASSWORD
+# Without them the APK is signed with a throwaway debug key (fine for testing,
+# but it cannot update an install signed with the release key).
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: daemon/go.mod
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - run: sudo apt-get update && sudo apt-get install -y nsis zip
+      - name: Version
+        id: v
+        run: |
+          V="${GITHUB_REF_NAME#v}"
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "code=$(echo "$V" | awk -F. '{print $1*10000 + $2*100 + $3}')" >> "$GITHUB_OUTPUT"
+      - name: Daemon tests
+        working-directory: daemon
+        run: go test -count=1 ./...
+      - name: Windows installer and portable zips
+        run: ./build.sh "${{ steps.v.outputs.version }}"
+      - name: Android release APK
+        working-directory: android
+        env:
+          KS_B64: ${{ secrets.KOROKMOTE_KEYSTORE_BASE64 }}
+          KOROKMOTE_KEYSTORE_PASSWORD: ${{ secrets.KOROKMOTE_KEYSTORE_PASSWORD }}
+          KOROKMOTE_KEY_ALIAS: ${{ secrets.KOROKMOTE_KEY_ALIAS }}
+          KOROKMOTE_KEY_PASSWORD: ${{ secrets.KOROKMOTE_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            export KOROKMOTE_KEYSTORE="$RUNNER_TEMP/release.jks"
+          fi
+          ./gradlew --no-daemon test assembleRelease -PversionName=${{ steps.v.outputs.version }} -PversionCode=${{ steps.v.outputs.code }}
+          cp app/build/outputs/apk/release/app-release.apk ../dist/korokmote-${{ steps.v.outputs.version }}.apk
+          cd ../dist && sha256sum korokmote-*.apk >> SHA256SUMS.txt
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.exe
+            dist/*.zip
+            dist/*.apk
+            dist/SHA256SUMS.txt
+          generate_release_notes: true
